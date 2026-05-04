@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/api ./cmd/api"
+  bin = "./tmp/api"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "internal/db"]  # don't rebuild on sqlc output changes
+
+[log]
+  time = true

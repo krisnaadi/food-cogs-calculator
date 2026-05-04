@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS price_history;
+DROP TABLE IF EXISTS cogs_snapshots;
+DROP TABLE IF EXISTS overhead_templates;
+DROP TABLE IF EXISTS recipe_labor;
+DROP TABLE IF EXISTS labor_profiles;
+DROP TABLE IF EXISTS recipe_lines;
+DROP TABLE IF EXISTS recipes;
+DROP TABLE IF EXISTS ingredients;
+DROP TABLE IF EXISTS suppliers;
