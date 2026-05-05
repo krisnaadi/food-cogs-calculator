@@ -35,8 +35,10 @@ type lineBreakdownResponse struct {
 	IngredientID   string  `json:"ingredient_id"`
 	IngredientName string  `json:"ingredient_name"`
 	Quantity       float64 `json:"quantity"`
-	Unit           string  `json:"unit"`
+	LineUnit       string  `json:"line_unit"`
+	IngredientUnit string  `json:"ingredient_unit"`
 	PricePerUnit   float64 `json:"price_per_unit"`
+	EffectivePrice float64 `json:"effective_price"`
 	WastePct       float64 `json:"waste_pct"`
 	RawCost        float64 `json:"raw_cost"`
 	AdjustedCost   float64 `json:"adjusted_cost"`
@@ -122,8 +124,10 @@ func (h *COGSHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 			IngredientID:   l.IngredientID,
 			IngredientName: l.IngredientName,
 			Quantity:       l.Quantity,
-			Unit:           l.Unit,
+			LineUnit:       l.LineUnit,
+			IngredientUnit: l.IngredientUnit,
 			PricePerUnit:   l.PricePerUnit,
+			EffectivePrice: l.EffectivePrice,
 			WastePct:       l.WastePct,
 			RawCost:        l.RawCost,
 			AdjustedCost:   l.AdjustedCost,

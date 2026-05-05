@@ -64,6 +64,7 @@ export interface RecipeLine {
     ingredient_id: string | null
     sub_recipe_id: string | null
     ingredient_name: string | null
+    ingredient_unit: string | null
     quantity: number
     unit: string
     price_per_unit: number

@@ -5,7 +5,22 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import Modal from '@/components/Modal'
 import { useRecipes, useCreateRecipe, useUpdateRecipe, useDeleteRecipe } from '@/hooks/useRecipes'
 import { useIngredients } from '@/hooks/useIngredients'
-import type { Recipe } from '@/lib/api'
+import type { Recipe, RecipeLine } from '@/lib/api'
+
+function unitFactor(ingredientUnit: string, lineUnit: string): number {
+    if (ingredientUnit === lineUnit) return 1
+    const table: Record<string, number> = {
+        'kg>g': 0.001,
+        'kg>mg': 0.000001,
+        'g>kg': 1000,
+        'g>mg': 0.001,
+        'mg>g': 1000,
+        'mg>kg': 1000000,
+        'l>ml': 0.001,
+        'ml>l': 1000,
+    }
+    return table[`${ingredientUnit}>${lineUnit}`] ?? 1
+}
 
 // ---------------------------------------------------------------
 // Schema
@@ -58,7 +73,7 @@ function formatIDR(n: number) {
 // ---------------------------------------------------------------
 function CostPreview({ lines, ingredients, batchYield }: {
     lines: FormValues['lines']
-    ingredients: { id: string; name: string; price_per_unit: number; waste_pct: number }[]
+    ingredients: { id: string; name: string; unit: string; price_per_unit: number; waste_pct: number }[]
     batchYield: number
 }) {
     const total = useMemo(() => {
@@ -66,28 +81,34 @@ function CostPreview({ lines, ingredients, batchYield }: {
             if (line.type !== 'ingredient' || !line.ingredient_id) return sum
             const ing = ingredients.find(i => i.id === line.ingredient_id)
             if (!ing) return sum
-            const raw = line.quantity * ing.price_per_unit
+
+            const factor = unitFactor(ing.unit, line.unit)
+            const effectivePrice = ing.price_per_unit * factor
+            const raw = line.quantity * effectivePrice
             const adjusted = ing.waste_pct > 0 ? raw / (1 - ing.waste_pct) : raw
             return sum + adjusted
         }, 0)
     }, [lines, ingredients])
 
     const perUnit = batchYield > 0 ? total / batchYield : 0
-
     if (total === 0) return null
 
     return (
         <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg px-4 py-3 flex items-center justify-between">
             <div>
                 <p className="text-xs text-amber-400/70 uppercase tracking-widest">Est. ingredient cost</p>
-                <p className="text-lg font-bold text-amber-400 tabular-nums">{formatIDR(total)}</p>
+                <p className="text-lg font-bold text-amber-400 tabular-nums">
+                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(total)}
+                </p>
                 <p className="text-xs text-amber-400/60">per batch</p>
             </div>
             {batchYield > 1 && (
                 <div className="text-right">
                     <p className="text-xs text-amber-400/70 uppercase tracking-widest">Per unit</p>
-                    <p className="text-lg font-bold text-amber-400 tabular-nums">{formatIDR(perUnit)}</p>
-                    <p className="text-xs text-amber-400/60">÷ {batchYield} {batchYield === 1 ? 'unit' : 'units'}</p>
+                    <p className="text-lg font-bold text-amber-400 tabular-nums">
+                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(perUnit)}
+                    </p>
+                    <p className="text-xs text-amber-400/60">÷ {batchYield} units</p>
                 </div>
             )}
         </div>
@@ -315,26 +336,29 @@ function RecipeForm({
 // ---------------------------------------------------------------
 // Recipe Card
 // ---------------------------------------------------------------
-function RecipeCard({
-    recipe,
-    onEdit,
-    onDelete,
-}: {
+function RecipeCard({ recipe, onEdit, onDelete }: {
     recipe: Recipe
     onEdit: () => void
     onDelete: () => void
 }) {
     const [expanded, setExpanded] = useState(false)
-    const totalCost = recipe.lines.reduce((sum, l) => {
-        const raw = l.quantity * l.price_per_unit
-        const adj = l.waste_pct > 0 ? raw / (1 - l.waste_pct) : raw
-        return sum + adj
-    }, 0)
+
+    const lineAdjustedCost = (line: RecipeLine) => {
+        // ingredient_unit may be null for sub-recipe lines
+        const ingUnit = line.ingredient_unit ?? line.unit
+        const factor = unitFactor(ingUnit, line.unit)
+        const raw = line.quantity * line.price_per_unit * factor
+        return line.waste_pct > 0 ? raw / (1 - line.waste_pct) : raw
+    }
+
+    const totalCost = recipe.lines.reduce((sum, l) => sum + lineAdjustedCost(l), 0)
     const perUnit = recipe.batch_yield > 0 ? totalCost / recipe.batch_yield : 0
+
+    const fmt = (n: number) =>
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 
     return (
         <div className="border border-stone-800 rounded-lg overflow-hidden hover:border-stone-700 transition-colors">
-            {/* header row */}
             <div className="flex items-center justify-between px-5 py-4">
                 <div className="flex items-center gap-3">
                     <button
@@ -347,14 +371,10 @@ function RecipeCard({
                         <div className="flex items-center gap-2">
                             <span className="text-stone-100 font-medium text-sm">{recipe.name}</span>
                             {recipe.is_sub_recipe && (
-                                <span className="text-xs bg-amber-400/20 text-amber-400 px-2 py-0.5 rounded">
-                                    sub-recipe
-                                </span>
+                                <span className="text-xs bg-amber-400/20 text-amber-400 px-2 py-0.5 rounded">sub-recipe</span>
                             )}
                             {recipe.category && (
-                                <span className="text-xs bg-stone-800 text-stone-400 px-2 py-0.5 rounded">
-                                    {recipe.category}
-                                </span>
+                                <span className="text-xs bg-stone-800 text-stone-400 px-2 py-0.5 rounded">{recipe.category}</span>
                             )}
                         </div>
                         <p className="text-xs text-stone-500 mt-0.5">
@@ -368,29 +388,18 @@ function RecipeCard({
                         <div className="text-right">
                             <p className="text-xs text-stone-500">ingredient cost</p>
                             <p className="text-sm font-semibold text-amber-400 tabular-nums">
-                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(perUnit)}
+                                {fmt(perUnit)}
                                 <span className="text-xs font-normal text-stone-500"> /unit</span>
                             </p>
                         </div>
                     )}
                     <div className="flex gap-1">
-                        <button
-                            onClick={onEdit}
-                            className="text-xs text-stone-400 hover:text-amber-400 transition-colors px-2 py-1 rounded hover:bg-stone-800"
-                        >
-                            Edit
-                        </button>
-                        <button
-                            onClick={onDelete}
-                            className="text-xs text-stone-400 hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-stone-800"
-                        >
-                            Delete
-                        </button>
+                        <button onClick={onEdit} className="text-xs text-stone-400 hover:text-amber-400 transition-colors px-2 py-1 rounded hover:bg-stone-800">Edit</button>
+                        <button onClick={onDelete} className="text-xs text-stone-400 hover:text-red-400  transition-colors px-2 py-1 rounded hover:bg-stone-800">Delete</button>
                     </div>
                 </div>
             </div>
 
-            {/* expanded lines */}
             {expanded && recipe.lines.length > 0 && (
                 <div className="border-t border-stone-800">
                     <table className="w-full text-xs">
@@ -399,39 +408,40 @@ function RecipeCard({
                                 <th className="text-left px-5 py-2 font-medium">Ingredient</th>
                                 <th className="text-right px-4 py-2 font-medium">Qty</th>
                                 <th className="text-left px-2 py-2 font-medium">Unit</th>
-                                <th className="text-right px-4 py-2 font-medium">Price/unit</th>
+                                <th className="text-right px-4 py-2 font-medium">Effective price</th>
                                 <th className="text-right px-4 py-2 font-medium">Waste</th>
                                 <th className="text-right px-5 py-2 font-medium">Line cost</th>
                             </tr>
                         </thead>
                         <tbody>
                             {recipe.lines.map(line => {
-                                const raw = line.quantity * line.price_per_unit
-                                const adj = line.waste_pct > 0 ? raw / (1 - line.waste_pct) : raw
+                                const ingUnit = line.ingredient_unit ?? line.unit
+                                const factor = unitFactor(ingUnit, line.unit)
+                                const effectivePrice = line.price_per_unit * factor
+                                const adj = lineAdjustedCost(line)
                                 return (
                                     <tr key={line.id} className="border-b border-stone-800/40 hover:bg-stone-800/20">
                                         <td className="px-5 py-2 text-stone-300">{line.ingredient_name ?? '—'}</td>
                                         <td className="px-4 py-2 text-right tabular-nums text-stone-400">{line.quantity}</td>
                                         <td className="px-2 py-2 text-stone-500">{line.unit}</td>
                                         <td className="px-4 py-2 text-right tabular-nums text-stone-400">
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(line.price_per_unit)}
+                                            {fmt(effectivePrice)}
+                                            {ingUnit !== line.unit && (
+                                                <span className="text-stone-600 ml-1">/{line.unit}</span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-2 text-right tabular-nums text-stone-500">
                                             {(line.waste_pct * 100).toFixed(1)}%
                                         </td>
                                         <td className="px-5 py-2 text-right tabular-nums text-amber-400 font-medium">
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(adj)}
+                                            {fmt(adj)}
                                         </td>
                                     </tr>
                                 )
                             })}
                             <tr className="bg-stone-800/40">
-                                <td colSpan={5} className="px-5 py-2 text-right text-xs text-stone-500 uppercase tracking-widest">
-                                    Total batch
-                                </td>
-                                <td className="px-5 py-2 text-right tabular-nums text-amber-400 font-bold">
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCost)}
-                                </td>
+                                <td colSpan={5} className="px-5 py-2 text-right text-xs text-stone-500 uppercase tracking-widest">Total batch</td>
+                                <td className="px-5 py-2 text-right tabular-nums text-amber-400 font-bold">{fmt(totalCost)}</td>
                             </tr>
                         </tbody>
                     </table>

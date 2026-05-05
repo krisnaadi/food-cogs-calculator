@@ -62,6 +62,7 @@ type recipeLineResponse struct {
 	IngredientID   *string   `json:"ingredient_id"`
 	SubRecipeID    *string   `json:"sub_recipe_id"`
 	IngredientName *string   `json:"ingredient_name"`
+	IngredientUnit *string   `json:"ingredient_unit"`
 	Quantity       float64   `json:"quantity"`
 	Unit           string    `json:"unit"`
 	PricePerUnit   float64   `json:"price_per_unit"`
@@ -112,6 +113,9 @@ func toRecipeResponse(r db.Recipe, lines []db.GetRecipeLinesRow) recipeResponse 
 		}
 		if l.IngredientName.Valid {
 			line.IngredientName = &l.IngredientName.String
+		}
+		if l.IngredientUnit.Valid {
+			line.IngredientUnit = &l.IngredientUnit.String
 		}
 		line.PricePerUnit = numericToFloat(l.PricePerUnit)
 		line.WastePct = numericToFloat(l.WastePct)
