@@ -62,20 +62,39 @@ func (q *Queries) CreateCOGSSnapshot(ctx context.Context, arg CreateCOGSSnapshot
 	return i, err
 }
 
-const listCOGSSnapshots = `-- name: ListCOGSSnapshots :many
+const deleteCOGSSnapshot = `-- name: DeleteCOGSSnapshot :exec
+DELETE FROM cogs_snapshots WHERE id = $1
+`
+
+func (q *Queries) DeleteCOGSSnapshot(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCOGSSnapshot, id)
+	return err
+}
+
+const listCOGSHistory = `-- name: ListCOGSHistory :many
 SELECT
-  cs.id, cs.recipe_id, cs.overhead_id, cs.ingredient_cost, cs.labor_cost, cs.overhead_cost, cs.total_batch_cost, cs.cost_per_unit, cs.suggested_price, cs.margin_pct, cs.calculated_at,
-  r.name AS recipe_name
+  cs.id,
+  cs.recipe_id,
+  cs.ingredient_cost,
+  cs.labor_cost,
+  cs.overhead_cost,
+  cs.total_batch_cost,
+  cs.cost_per_unit,
+  cs.suggested_price,
+  cs.margin_pct,
+  cs.calculated_at,
+  r.name  AS recipe_name,
+  r.batch_yield,
+  r.yield_unit
 FROM cogs_snapshots cs
 JOIN recipes r ON r.id = cs.recipe_id
 ORDER BY cs.calculated_at DESC
-LIMIT 50
+LIMIT 100
 `
 
-type ListCOGSSnapshotsRow struct {
+type ListCOGSHistoryRow struct {
 	ID             uuid.UUID          `json:"id"`
 	RecipeID       uuid.UUID          `json:"recipe_id"`
-	OverheadID     pgtype.UUID        `json:"overhead_id"`
 	IngredientCost float64            `json:"ingredient_cost"`
 	LaborCost      float64            `json:"labor_cost"`
 	OverheadCost   float64            `json:"overhead_cost"`
@@ -85,21 +104,22 @@ type ListCOGSSnapshotsRow struct {
 	MarginPct      float64            `json:"margin_pct"`
 	CalculatedAt   pgtype.Timestamptz `json:"calculated_at"`
 	RecipeName     string             `json:"recipe_name"`
+	BatchYield     int32              `json:"batch_yield"`
+	YieldUnit      string             `json:"yield_unit"`
 }
 
-func (q *Queries) ListCOGSSnapshots(ctx context.Context) ([]ListCOGSSnapshotsRow, error) {
-	rows, err := q.db.Query(ctx, listCOGSSnapshots)
+func (q *Queries) ListCOGSHistory(ctx context.Context) ([]ListCOGSHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listCOGSHistory)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListCOGSSnapshotsRow{}
+	items := []ListCOGSHistoryRow{}
 	for rows.Next() {
-		var i ListCOGSSnapshotsRow
+		var i ListCOGSHistoryRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.OverheadID,
 			&i.IngredientCost,
 			&i.LaborCost,
 			&i.OverheadCost,
@@ -109,6 +129,8 @@ func (q *Queries) ListCOGSSnapshots(ctx context.Context) ([]ListCOGSSnapshotsRow
 			&i.MarginPct,
 			&i.CalculatedAt,
 			&i.RecipeName,
+			&i.BatchYield,
+			&i.YieldUnit,
 		); err != nil {
 			return nil, err
 		}
@@ -120,25 +142,55 @@ func (q *Queries) ListCOGSSnapshots(ctx context.Context) ([]ListCOGSSnapshotsRow
 	return items, nil
 }
 
-const listCOGSSnapshotsByRecipe = `-- name: ListCOGSSnapshotsByRecipe :many
-SELECT id, recipe_id, overhead_id, ingredient_cost, labor_cost, overhead_cost, total_batch_cost, cost_per_unit, suggested_price, margin_pct, calculated_at FROM cogs_snapshots
-WHERE recipe_id = $1
-ORDER BY calculated_at DESC
+const listCOGSHistoryByRecipe = `-- name: ListCOGSHistoryByRecipe :many
+SELECT
+  cs.id,
+  cs.recipe_id,
+  cs.ingredient_cost,
+  cs.labor_cost,
+  cs.overhead_cost,
+  cs.total_batch_cost,
+  cs.cost_per_unit,
+  cs.suggested_price,
+  cs.margin_pct,
+  cs.calculated_at,
+  r.name  AS recipe_name,
+  r.batch_yield,
+  r.yield_unit
+FROM cogs_snapshots cs
+JOIN recipes r ON r.id = cs.recipe_id
+WHERE cs.recipe_id = $1
+ORDER BY cs.calculated_at DESC
 `
 
-func (q *Queries) ListCOGSSnapshotsByRecipe(ctx context.Context, recipeID uuid.UUID) ([]CogsSnapshot, error) {
-	rows, err := q.db.Query(ctx, listCOGSSnapshotsByRecipe, recipeID)
+type ListCOGSHistoryByRecipeRow struct {
+	ID             uuid.UUID          `json:"id"`
+	RecipeID       uuid.UUID          `json:"recipe_id"`
+	IngredientCost float64            `json:"ingredient_cost"`
+	LaborCost      float64            `json:"labor_cost"`
+	OverheadCost   float64            `json:"overhead_cost"`
+	TotalBatchCost float64            `json:"total_batch_cost"`
+	CostPerUnit    float64            `json:"cost_per_unit"`
+	SuggestedPrice float64            `json:"suggested_price"`
+	MarginPct      float64            `json:"margin_pct"`
+	CalculatedAt   pgtype.Timestamptz `json:"calculated_at"`
+	RecipeName     string             `json:"recipe_name"`
+	BatchYield     int32              `json:"batch_yield"`
+	YieldUnit      string             `json:"yield_unit"`
+}
+
+func (q *Queries) ListCOGSHistoryByRecipe(ctx context.Context, recipeID uuid.UUID) ([]ListCOGSHistoryByRecipeRow, error) {
+	rows, err := q.db.Query(ctx, listCOGSHistoryByRecipe, recipeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CogsSnapshot{}
+	items := []ListCOGSHistoryByRecipeRow{}
 	for rows.Next() {
-		var i CogsSnapshot
+		var i ListCOGSHistoryByRecipeRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.OverheadID,
 			&i.IngredientCost,
 			&i.LaborCost,
 			&i.OverheadCost,
@@ -147,6 +199,9 @@ func (q *Queries) ListCOGSSnapshotsByRecipe(ctx context.Context, recipeID uuid.U
 			&i.SuggestedPrice,
 			&i.MarginPct,
 			&i.CalculatedAt,
+			&i.RecipeName,
+			&i.BatchYield,
+			&i.YieldUnit,
 		); err != nil {
 			return nil, err
 		}

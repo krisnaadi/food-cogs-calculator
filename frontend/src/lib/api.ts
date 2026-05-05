@@ -38,6 +38,20 @@ export const cogsApi = {
     calculate: (data: COGSPayload) => request<COGSResult>('/cogs/calculate', { method: 'POST', body: JSON.stringify(data) }),
 }
 
+export const suppliersApi = {
+    list: () => request<Supplier[]>('/suppliers'),
+    get: (id: string) => request<Supplier>(`/suppliers/${id}`),
+    create: (data: SupplierPayload) => request<Supplier>('/suppliers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: SupplierPayload) => request<Supplier>(`/suppliers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/suppliers/${id}`, { method: 'DELETE' }),
+    ingredients: (id: string) => request<Ingredient[]>(`/suppliers/${id}/ingredients`),
+}
+
+export const historyApi = {
+    list: () => request<COGSHistoryRow[]>('/cogs/history'),
+    delete: (id: string) => request<void>(`/cogs/history/${id}`, { method: 'DELETE' }),
+}
+
 // --- Types ---
 
 export interface Ingredient {
@@ -147,4 +161,31 @@ export interface COGSResult {
     suggested_price: number
     margin_pct: number
     breakdown_by_line: COGSLineBreakdown[]
+}
+
+export interface Supplier {
+    id: string
+    name: string
+    contact: string | null
+}
+
+export interface SupplierPayload {
+    name: string
+    contact?: string
+}
+
+export interface COGSHistoryRow {
+    id: string
+    recipe_id: string
+    recipe_name: string
+    batch_yield: number
+    yield_unit: string
+    ingredient_cost: number
+    labor_cost: number
+    overhead_cost: number
+    total_batch_cost: number
+    cost_per_unit: number
+    suggested_price: number
+    margin_pct: number
+    calculated_at: string
 }

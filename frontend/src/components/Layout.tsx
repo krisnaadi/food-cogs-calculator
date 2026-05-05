@@ -3,7 +3,9 @@ import { NavLink, Outlet } from 'react-router-dom'
 const links = [
     { to: '/ingredients', label: 'Ingredients' },
     { to: '/recipes', label: 'Recipes' },
+    { to: '/suppliers', label: 'Suppliers' },
     { to: '/cogs', label: 'COGS Calculator' },
+    { to: '/history', label: 'COGS History' },
 ]
 
 export default function Layout() {

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -17,26 +18,33 @@ type Querier interface {
 	CreateOverheadTemplate(ctx context.Context, arg CreateOverheadTemplateParams) (OverheadTemplate, error)
 	CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error)
 	CreateRecipeLine(ctx context.Context, arg CreateRecipeLineParams) (RecipeLine, error)
+	CreateSupplier(ctx context.Context, arg CreateSupplierParams) (Supplier, error)
+	DeleteCOGSSnapshot(ctx context.Context, id uuid.UUID) error
 	DeleteIngredient(ctx context.Context, id uuid.UUID) error
 	DeleteLaborProfile(ctx context.Context, id uuid.UUID) error
 	DeleteOverheadTemplate(ctx context.Context, id uuid.UUID) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
 	DeleteRecipeLines(ctx context.Context, recipeID uuid.UUID) error
+	DeleteSupplier(ctx context.Context, id uuid.UUID) error
 	GetIngredient(ctx context.Context, id uuid.UUID) (Ingredient, error)
 	GetOverheadTemplate(ctx context.Context, id uuid.UUID) (OverheadTemplate, error)
 	GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error)
 	GetRecipeLines(ctx context.Context, recipeID uuid.UUID) ([]GetRecipeLinesRow, error)
+	GetSupplier(ctx context.Context, id uuid.UUID) (Supplier, error)
+	GetSupplierIngredients(ctx context.Context, supplierID pgtype.UUID) ([]Ingredient, error)
 	ListAllRecipes(ctx context.Context) ([]Recipe, error)
-	ListCOGSSnapshots(ctx context.Context) ([]ListCOGSSnapshotsRow, error)
-	ListCOGSSnapshotsByRecipe(ctx context.Context, recipeID uuid.UUID) ([]CogsSnapshot, error)
+	ListCOGSHistory(ctx context.Context) ([]ListCOGSHistoryRow, error)
+	ListCOGSHistoryByRecipe(ctx context.Context, recipeID uuid.UUID) ([]ListCOGSHistoryByRecipeRow, error)
 	ListIngredients(ctx context.Context) ([]Ingredient, error)
 	ListLaborProfiles(ctx context.Context) ([]LaborProfile, error)
 	ListOverheadTemplates(ctx context.Context) ([]OverheadTemplate, error)
 	ListRecipes(ctx context.Context) ([]Recipe, error)
 	ListSubRecipes(ctx context.Context) ([]Recipe, error)
+	ListSuppliers(ctx context.Context) ([]Supplier, error)
 	UpdateIngredient(ctx context.Context, arg UpdateIngredientParams) (Ingredient, error)
 	UpdateOverheadTemplate(ctx context.Context, arg UpdateOverheadTemplateParams) (OverheadTemplate, error)
 	UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error)
+	UpdateSupplier(ctx context.Context, arg UpdateSupplierParams) (Supplier, error)
 }
 
 var _ Querier = (*Queries)(nil)

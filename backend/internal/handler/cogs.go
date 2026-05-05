@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/krisnaadi/cogs-app/internal/db"
 	"github.com/krisnaadi/cogs-app/internal/service"
@@ -169,4 +170,63 @@ func (h *COGSHandler) CreateOverhead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, item)
+}
+
+func (h *COGSHandler) ListHistory(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.queries.ListCOGSHistory(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	type historyRow struct {
+		ID             uuid.UUID `json:"id"`
+		RecipeID       uuid.UUID `json:"recipe_id"`
+		RecipeName     string    `json:"recipe_name"`
+		BatchYield     int32     `json:"batch_yield"`
+		YieldUnit      string    `json:"yield_unit"`
+		IngredientCost float64   `json:"ingredient_cost"`
+		LaborCost      float64   `json:"labor_cost"`
+		OverheadCost   float64   `json:"overhead_cost"`
+		TotalBatchCost float64   `json:"total_batch_cost"`
+		CostPerUnit    float64   `json:"cost_per_unit"`
+		SuggestedPrice float64   `json:"suggested_price"`
+		MarginPct      float64   `json:"margin_pct"`
+		CalculatedAt   string    `json:"calculated_at"`
+	}
+	result := make([]historyRow, len(rows))
+	for i, row := range rows {
+		t := ""
+		if row.CalculatedAt.Valid {
+			t = row.CalculatedAt.Time.Format("2006-01-02 15:04:05")
+		}
+		result[i] = historyRow{
+			ID:             row.ID,
+			RecipeID:       row.RecipeID,
+			RecipeName:     row.RecipeName,
+			BatchYield:     row.BatchYield,
+			YieldUnit:      row.YieldUnit,
+			IngredientCost: row.IngredientCost,
+			LaborCost:      row.LaborCost,
+			OverheadCost:   row.OverheadCost,
+			TotalBatchCost: row.TotalBatchCost,
+			CostPerUnit:    row.CostPerUnit,
+			SuggestedPrice: row.SuggestedPrice,
+			MarginPct:      row.MarginPct,
+			CalculatedAt:   t,
+		}
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *COGSHandler) DeleteSnapshot(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.queries.DeleteCOGSSnapshot(r.Context(), id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -6,16 +6,46 @@ INSERT INTO cogs_snapshots (
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
--- name: ListCOGSSnapshots :many
+-- name: ListCOGSHistory :many
 SELECT
-  cs.*,
-  r.name AS recipe_name
+  cs.id,
+  cs.recipe_id,
+  cs.ingredient_cost,
+  cs.labor_cost,
+  cs.overhead_cost,
+  cs.total_batch_cost,
+  cs.cost_per_unit,
+  cs.suggested_price,
+  cs.margin_pct,
+  cs.calculated_at,
+  r.name  AS recipe_name,
+  r.batch_yield,
+  r.yield_unit
 FROM cogs_snapshots cs
 JOIN recipes r ON r.id = cs.recipe_id
 ORDER BY cs.calculated_at DESC
-LIMIT 50;
+LIMIT 100;
 
--- name: ListCOGSSnapshotsByRecipe :many
-SELECT * FROM cogs_snapshots
-WHERE recipe_id = $1
-ORDER BY calculated_at DESC;
+-- name: ListCOGSHistoryByRecipe :many
+SELECT
+  cs.id,
+  cs.recipe_id,
+  cs.ingredient_cost,
+  cs.labor_cost,
+  cs.overhead_cost,
+  cs.total_batch_cost,
+  cs.cost_per_unit,
+  cs.suggested_price,
+  cs.margin_pct,
+  cs.calculated_at,
+  r.name  AS recipe_name,
+  r.batch_yield,
+  r.yield_unit
+FROM cogs_snapshots cs
+JOIN recipes r ON r.id = cs.recipe_id
+WHERE cs.recipe_id = $1
+ORDER BY cs.calculated_at DESC;
+
+-- name: DeleteCOGSSnapshot :exec
+DELETE FROM cogs_snapshots WHERE id = $1;
+
