@@ -11,7 +11,8 @@ RETURNING *;
 
 -- name: UpdateIngredient :one
 UPDATE ingredients
-SET name = $2, unit = $3, price_per_unit = $4, waste_pct = $5, updated_at = NOW()
+SET name = $2, sku = $3, unit = $4, price_per_unit = $5, waste_pct = $6,
+    supplier_id = $7, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
 

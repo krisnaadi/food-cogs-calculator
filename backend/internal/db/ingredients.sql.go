@@ -114,26 +114,31 @@ func (q *Queries) ListIngredients(ctx context.Context) ([]Ingredient, error) {
 
 const updateIngredient = `-- name: UpdateIngredient :one
 UPDATE ingredients
-SET name = $2, unit = $3, price_per_unit = $4, waste_pct = $5, updated_at = NOW()
+SET name = $2, sku = $3, unit = $4, price_per_unit = $5, waste_pct = $6,
+    supplier_id = $7, updated_at = NOW()
 WHERE id = $1
 RETURNING id, name, sku, unit, price_per_unit, waste_pct, supplier_id, updated_at
 `
 
 type UpdateIngredientParams struct {
-	ID           uuid.UUID `json:"id"`
-	Name         string    `json:"name"`
-	Unit         string    `json:"unit"`
-	PricePerUnit float64   `json:"price_per_unit"`
-	WastePct     float64   `json:"waste_pct"`
+	ID           uuid.UUID   `json:"id"`
+	Name         string      `json:"name"`
+	Sku          pgtype.Text `json:"sku"`
+	Unit         string      `json:"unit"`
+	PricePerUnit float64     `json:"price_per_unit"`
+	WastePct     float64     `json:"waste_pct"`
+	SupplierID   pgtype.UUID `json:"supplier_id"`
 }
 
 func (q *Queries) UpdateIngredient(ctx context.Context, arg UpdateIngredientParams) (Ingredient, error) {
 	row := q.db.QueryRow(ctx, updateIngredient,
 		arg.ID,
 		arg.Name,
+		arg.Sku,
 		arg.Unit,
 		arg.PricePerUnit,
 		arg.WastePct,
+		arg.SupplierID,
 	)
 	var i Ingredient
 	err := row.Scan(

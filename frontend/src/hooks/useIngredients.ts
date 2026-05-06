@@ -13,7 +13,11 @@ export function useCreateIngredient() {
     const qc = useQueryClient()
     return useMutation({
         mutationFn: (data: IngredientPayload) => ingredientsApi.create(data),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+        onSuccess: (created) => {
+            qc.invalidateQueries({ queryKey: ['ingredients'] })
+            // invalidate history for this specific ingredient
+            qc.invalidateQueries({ queryKey: ['price-history', created.id] })
+        },
     })
 }
 
@@ -22,7 +26,13 @@ export function useUpdateIngredient() {
     return useMutation({
         mutationFn: ({ id, data }: { id: string; data: IngredientPayload }) =>
             ingredientsApi.update(id, data),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+        onSuccess: (updated) => {
+            qc.invalidateQueries({ queryKey: ['ingredients'] })
+            // invalidate this ingredient's price history so the modal reflects the new entry
+            qc.invalidateQueries({ queryKey: ['price-history', updated.id] })
+            // also refresh dashboard since top-ingredients prices changed
+            qc.invalidateQueries({ queryKey: ['top-ingredients'] })
+        },
     })
 }
 
@@ -30,6 +40,9 @@ export function useDeleteIngredient() {
     const qc = useQueryClient()
     return useMutation({
         mutationFn: (id: string) => ingredientsApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['ingredients'] })
+            qc.invalidateQueries({ queryKey: ['top-ingredients'] })
+        },
     })
 }

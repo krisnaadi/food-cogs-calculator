@@ -19,6 +19,7 @@ export const ingredientsApi = {
     create: (data: IngredientPayload) => request<Ingredient>('/ingredients', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: IngredientPayload) => request<Ingredient>(`/ingredients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/ingredients/${id}`, { method: 'DELETE' }),
+    priceHistory: (id: string) => request<PriceHistoryEntry[]>(`/ingredients/${id}/price-history`),
 }
 
 export const recipesApi = {
@@ -52,6 +53,12 @@ export const historyApi = {
     delete: (id: string) => request<void>(`/cogs/history/${id}`, { method: 'DELETE' }),
 }
 
+export const dashboardApi = {
+    stats: () => request<DashboardStats>('/dashboard/stats'),
+    topIngredients: () => request<TopIngredient[]>('/dashboard/top-ingredients'),
+    recentSnapshots: () => request<RecentSnapshot[]>('/dashboard/recent-snapshots'),
+}
+
 // --- Types ---
 
 export interface Ingredient {
@@ -62,6 +69,7 @@ export interface Ingredient {
     price_per_unit: number
     waste_pct: number
     supplier_id: string | null
+    supplier_name: string | null
 }
 
 export interface IngredientPayload {
@@ -184,6 +192,37 @@ export interface COGSHistoryRow {
     labor_cost: number
     overhead_cost: number
     total_batch_cost: number
+    cost_per_unit: number
+    suggested_price: number
+    margin_pct: number
+    calculated_at: string
+}
+
+export interface PriceHistoryEntry {
+    id: string
+    price_per_unit: number
+    recorded_at: string
+    supplier_name: string | null
+}
+
+export interface DashboardStats {
+    ingredient_count: number
+    recipe_count: number
+    supplier_count: number
+    snapshot_count: number
+}
+
+export interface TopIngredient {
+    id: string
+    name: string
+    unit: string
+    price_per_unit: number
+    used_in_recipes: number
+}
+
+export interface RecentSnapshot {
+    id: string
+    recipe_name: string
     cost_per_unit: number
     suggested_price: number
     margin_pct: number

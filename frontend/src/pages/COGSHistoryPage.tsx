@@ -37,7 +37,11 @@ export default function COGSHistoryPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => historyApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['cogs-history'] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['cogs-history'] })
+            qc.invalidateQueries({ queryKey: ['recent-snapshots'] })
+            qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+        },
     })
 
     const [confirmDelete, setConfirmDelete] = useState<COGSHistoryRow | null>(null)
@@ -114,10 +118,10 @@ export default function COGSHistoryPage() {
                             <p className="text-xs text-stone-500 mt-0.5">{latest.calculated_at.slice(0, 10)}</p>
                         </div>
                         <div className={`rounded-lg px-5 py-4 border ${delta > 0
-                                ? 'bg-red-400/10 border-red-400/30'
-                                : delta < 0
-                                    ? 'bg-green-400/10 border-green-400/30'
-                                    : 'bg-stone-900 border-stone-800'
+                            ? 'bg-red-400/10 border-red-400/30'
+                            : delta < 0
+                                ? 'bg-green-400/10 border-green-400/30'
+                                : 'bg-stone-900 border-stone-800'
                             }`}>
                             <p className={`text-xs uppercase tracking-widest mb-1 ${delta > 0 ? 'text-red-400/70' : delta < 0 ? 'text-green-400/70' : 'text-stone-500'
                                 }`}>Cost trend</p>

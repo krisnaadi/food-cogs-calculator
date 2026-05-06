@@ -27,6 +27,7 @@ func main() {
 	recipesHandler := handler.NewRecipesHandler(queries)
 	cogsHandler := handler.NewCOGSHandler(queries)
 	suppliersHandler := handler.NewSuppliersHandler(queries)
+	dashboardHandler := handler.NewDashboardHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -50,6 +51,9 @@ func main() {
 	r.Post("/cogs/overheads", cogsHandler.CreateOverhead)
 	r.Get("/cogs/history", cogsHandler.ListHistory)
 	r.Delete("/cogs/history/{id}", cogsHandler.DeleteSnapshot)
+	r.Get("/dashboard/stats", dashboardHandler.Stats)
+	r.Get("/dashboard/top-ingredients", dashboardHandler.TopIngredients)
+	r.Get("/dashboard/recent-snapshots", dashboardHandler.RecentSnapshots)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("server listening on %s", addr)

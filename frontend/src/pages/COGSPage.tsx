@@ -6,7 +6,7 @@ import {
     PieChart, Pie, Cell, Tooltip,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend,
 } from 'recharts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cogsApi, overheadApi, recipesApi } from '@/lib/api'
 import type { COGSResult, OverheadTemplate } from '@/lib/api'
 import Modal from '@/components/Modal'
@@ -318,8 +318,8 @@ function ResultsPanel({ result }: { result: COGSResult }) {
                             <div
                                 key={label}
                                 className={`rounded-lg px-4 py-3 text-center border ${isTarget
-                                        ? 'border-amber-400/40 bg-amber-400/10'
-                                        : 'border-stone-700 bg-stone-800/50'
+                                    ? 'border-amber-400/40 bg-amber-400/10'
+                                    : 'border-stone-700 bg-stone-800/50'
                                     }`}
                             >
                                 <p className={`text-xs uppercase tracking-widest mb-1 ${isTarget ? 'text-amber-400/70' : 'text-stone-500'}`}>
@@ -342,6 +342,8 @@ function ResultsPanel({ result }: { result: COGSResult }) {
 // Main Page
 // ---------------------------------------------------------------
 export default function COGSPage() {
+    const qc = useQueryClient()
+
     const { data: recipes = [] } = useQuery({ queryKey: ['recipes'], queryFn: recipesApi.list })
     const { data: overheads = [], refetch: refetchOverheads } = useQuery({
         queryKey: ['overheads'], queryFn: overheadApi.list,
@@ -352,7 +354,13 @@ export default function COGSPage() {
 
     const calcMut = useMutation({
         mutationFn: cogsApi.calculate,
-        onSuccess: setResult,
+        onSuccess: (result) => {
+            setResult(result)
+            // refresh history list and dashboard recent snapshots
+            qc.invalidateQueries({ queryKey: ['cogs-history'] })
+            qc.invalidateQueries({ queryKey: ['recent-snapshots'] })
+            qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+        },
     })
 
     const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CalcForm>({

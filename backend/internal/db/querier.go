@@ -16,6 +16,7 @@ type Querier interface {
 	CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error)
 	CreateLaborProfile(ctx context.Context, arg CreateLaborProfileParams) (LaborProfile, error)
 	CreateOverheadTemplate(ctx context.Context, arg CreateOverheadTemplateParams) (OverheadTemplate, error)
+	CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) (PriceHistory, error)
 	CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error)
 	CreateRecipeLine(ctx context.Context, arg CreateRecipeLineParams) (RecipeLine, error)
 	CreateSupplier(ctx context.Context, arg CreateSupplierParams) (Supplier, error)
@@ -26,12 +27,17 @@ type Querier interface {
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
 	DeleteRecipeLines(ctx context.Context, recipeID uuid.UUID) error
 	DeleteSupplier(ctx context.Context, id uuid.UUID) error
+	GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, error)
 	GetIngredient(ctx context.Context, id uuid.UUID) (Ingredient, error)
+	GetLatestPrice(ctx context.Context, ingredientID uuid.UUID) (float64, error)
 	GetOverheadTemplate(ctx context.Context, id uuid.UUID) (OverheadTemplate, error)
+	GetPriceHistory(ctx context.Context, ingredientID uuid.UUID) ([]GetPriceHistoryRow, error)
+	GetRecentSnapshots(ctx context.Context) ([]GetRecentSnapshotsRow, error)
 	GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error)
 	GetRecipeLines(ctx context.Context, recipeID uuid.UUID) ([]GetRecipeLinesRow, error)
 	GetSupplier(ctx context.Context, id uuid.UUID) (Supplier, error)
 	GetSupplierIngredients(ctx context.Context, supplierID pgtype.UUID) ([]Ingredient, error)
+	GetTopIngredientsByCost(ctx context.Context) ([]GetTopIngredientsByCostRow, error)
 	ListAllRecipes(ctx context.Context) ([]Recipe, error)
 	ListCOGSHistory(ctx context.Context) ([]ListCOGSHistoryRow, error)
 	ListCOGSHistoryByRecipe(ctx context.Context, recipeID uuid.UUID) ([]ListCOGSHistoryByRecipeRow, error)
