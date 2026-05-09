@@ -6,6 +6,9 @@ const links = [
     { to: '/recipes', label: 'Recipes' },
     { to: '/suppliers', label: 'Suppliers' },
     { to: '/cogs', label: 'COGS Calculator' },
+    { to: '/comparison', label: 'Compare' },
+    { to: '/simulator', label: 'What-If' },
+    { to: '/production', label: 'Production Log' },
     { to: '/history', label: 'COGS History' },
 ]
 

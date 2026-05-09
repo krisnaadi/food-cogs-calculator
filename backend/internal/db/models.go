@@ -56,6 +56,16 @@ type PriceHistory struct {
 	RecordedAt   pgtype.Date `json:"recorded_at"`
 }
 
+type ProductionLog struct {
+	ID                   uuid.UUID          `json:"id"`
+	RecipeID             uuid.UUID          `json:"recipe_id"`
+	BatchSize            int32              `json:"batch_size"`
+	ActualIngredientCost float64            `json:"actual_ingredient_cost"`
+	ActualYield          float64            `json:"actual_yield"`
+	ProducedAt           pgtype.Timestamptz `json:"produced_at"`
+	Notes                pgtype.Text        `json:"notes"`
+}
+
 type Recipe struct {
 	ID          uuid.UUID          `json:"id"`
 	Name        string             `json:"name"`

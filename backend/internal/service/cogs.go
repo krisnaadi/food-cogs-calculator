@@ -9,8 +9,6 @@ import (
 	"github.com/krisnaadi/cogs-app/internal/db"
 )
 
-// --- pgtype helpers ---
-
 func pgNumericToFloat(n pgtype.Numeric) float64 {
 	if !n.Valid {
 		return 0
@@ -29,34 +27,21 @@ func pgTextToString(t pgtype.Text) string {
 	return t.String
 }
 
-// --- unit conversion ---
-// Returns how many ingredientUnits are in 1 lineUnit.
-// e.g. ingredientUnit=kg, lineUnit=g → 1g = 0.001kg → 0.001
-// Multiply price_per_ingredientUnit by this factor to get price_per_lineUnit.
 func unitFactor(ingredientUnit, lineUnit string) float64 {
 	if ingredientUnit == lineUnit {
 		return 1
 	}
 	type pair struct{ from, to string }
 	table := map[pair]float64{
-		// weight
-		{"kg", "g"}:  0.001,
-		{"kg", "mg"}: 0.000001,
-		{"g", "kg"}:  1000,
-		{"g", "mg"}:  0.001,
-		{"mg", "g"}:  1000,
-		{"mg", "kg"}: 1000000,
-		// volume
-		{"l", "ml"}: 0.001,
-		{"ml", "l"}: 1000,
-		// mass ↔ volume (approximate water baseline — override as needed)
-		{"kg", "ml"}: 0.001,
-		{"l", "g"}:   1,
+		{"kg", "g"}: 0.001, {"kg", "mg"}: 0.000001,
+		{"g", "kg"}: 1000, {"g", "mg"}: 0.001,
+		{"mg", "g"}: 1000, {"mg", "kg"}: 1000000,
+		{"l", "ml"}: 0.001, {"ml", "l"}: 1000,
 	}
 	if f, ok := table[pair{ingredientUnit, lineUnit}]; ok {
 		return f
 	}
-	return 1 // unmapped: assume same unit
+	return 1
 }
 
 // --- types ---
@@ -73,11 +58,12 @@ type COGSInput struct {
 type LineBreakdown struct {
 	IngredientID   string
 	IngredientName string
+	IsSubRecipe    bool
 	Quantity       float64
-	LineUnit       string  // unit used in this recipe line
-	IngredientUnit string  // unit the price is defined in
-	PricePerUnit   float64 // price per ingredient unit
-	EffectivePrice float64 // price per line unit after conversion
+	LineUnit       string
+	IngredientUnit string
+	PricePerUnit   float64
+	EffectivePrice float64
 	WastePct       float64
 	RawCost        float64
 	AdjustedCost   float64
@@ -107,61 +93,121 @@ func NewCOGSService(q db.Querier) *COGSService {
 	return &COGSService{queries: q}
 }
 
+// calcLineCost recursively resolves ingredient and sub-recipe lines.
+// Returns total cost for the given recipe scaled by batchSize, plus breakdown entries.
+func (s *COGSService) calcLineCost(
+	ctx context.Context,
+	recipeID uuid.UUID,
+	batchSize int,
+	depth int, // guard against circular references
+) (float64, []LineBreakdown, error) {
+	if depth > 5 {
+		return 0, nil, nil // circular reference guard
+	}
+
+	lines, err := s.queries.GetRecipeLines(ctx, recipeID)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var total float64
+	var breakdown []LineBreakdown
+
+	for _, line := range lines {
+		switch {
+
+		// --- direct ingredient ---
+		case line.IngredientID.Valid:
+			ingID, err := uuid.FromBytes(line.IngredientID.Bytes[:])
+			if err != nil {
+				continue
+			}
+			ingUnit := pgTextToString(line.IngredientUnit)
+			lineUnit := line.Unit
+			price := pgNumericToFloat(line.PricePerUnit)
+			wastePct := pgNumericToFloat(line.WastePct)
+			qty := line.Quantity
+
+			factor := unitFactor(ingUnit, lineUnit)
+			effectivePrice := price * factor
+			raw := qty * effectivePrice
+			adjusted := raw
+			if wastePct > 0 && wastePct < 1 {
+				adjusted = raw / (1 - wastePct)
+			}
+			adjusted *= float64(batchSize)
+			total += adjusted
+
+			breakdown = append(breakdown, LineBreakdown{
+				IngredientID:   ingID.String(),
+				IngredientName: pgTextToString(line.IngredientName),
+				IsSubRecipe:    false,
+				Quantity:       qty,
+				LineUnit:       lineUnit,
+				IngredientUnit: ingUnit,
+				PricePerUnit:   price,
+				EffectivePrice: round(effectivePrice),
+				WastePct:       wastePct,
+				RawCost:        round(raw),
+				AdjustedCost:   round(adjusted),
+			})
+
+		// --- sub-recipe ---
+		case line.SubRecipeID.Valid:
+			subID, err := uuid.FromBytes(line.SubRecipeID.Bytes[:])
+			if err != nil {
+				continue
+			}
+			subRecipe, err := s.queries.GetRecipe(ctx, subID)
+			if err != nil {
+				continue
+			}
+
+			// recursively get the cost for 1 batch of the sub-recipe
+			subBatchCost, _, err := s.calcLineCost(ctx, subID, 1, depth+1)
+			if err != nil {
+				continue
+			}
+
+			batchYield := float64(subRecipe.BatchYield)
+			if batchYield == 0 {
+				batchYield = 1
+			}
+
+			// cost per one yield-unit of the sub-recipe
+			costPerYieldUnit := subBatchCost / batchYield
+
+			// apply unit conversion between sub-recipe yield_unit and line unit
+			factor := unitFactor(subRecipe.YieldUnit, line.Unit)
+			lineCost := line.Quantity * costPerYieldUnit * factor * float64(batchSize)
+			total += lineCost
+
+			breakdown = append(breakdown, LineBreakdown{
+				IngredientID:   subID.String(),
+				IngredientName: subRecipe.Name,
+				IsSubRecipe:    true,
+				Quantity:       line.Quantity,
+				LineUnit:       line.Unit,
+				IngredientUnit: subRecipe.YieldUnit,
+				EffectivePrice: round(costPerYieldUnit * factor),
+				AdjustedCost:   round(lineCost),
+				RawCost:        round(lineCost),
+			})
+		}
+	}
+
+	return total, breakdown, nil
+}
+
 func (s *COGSService) Calculate(ctx context.Context, input COGSInput) (*COGSResult, error) {
 	recipe, err := s.queries.GetRecipe(ctx, input.RecipeID)
 	if err != nil {
 		return nil, err
 	}
 
-	lines, err := s.queries.GetRecipeLines(ctx, input.RecipeID)
+	ingredientCost, breakdown, err := s.calcLineCost(ctx, input.RecipeID, input.BatchSize, 0)
 	if err != nil {
 		return nil, err
-	}
-
-	var ingredientCost float64
-	var breakdown []LineBreakdown
-
-	for _, line := range lines {
-		if !line.IngredientID.Valid {
-			continue
-		}
-		ingID, err := uuid.FromBytes(line.IngredientID.Bytes[:])
-		if err != nil {
-			continue
-		}
-
-		ingredientUnit := pgTextToString(line.IngredientUnit)
-		lineUnit := line.Unit
-		pricePerUnit := pgNumericToFloat(line.PricePerUnit)
-		wastePct := pgNumericToFloat(line.WastePct)
-		quantity := line.Quantity
-
-		// Convert: e.g. ingredient=18000/kg, line uses g
-		// factor = 0.001 → effectivePrice = 18000 × 0.001 = 18 IDR/g
-		factor := unitFactor(ingredientUnit, lineUnit)
-		effectivePrice := pricePerUnit * factor
-
-		rawCost := quantity * effectivePrice
-		adjustedCost := rawCost
-		if wastePct > 0 && wastePct < 1 {
-			adjustedCost = rawCost / (1 - wastePct)
-		}
-		adjustedCost *= float64(input.BatchSize)
-
-		ingredientCost += adjustedCost
-
-		breakdown = append(breakdown, LineBreakdown{
-			IngredientID:   ingID.String(),
-			IngredientName: pgTextToString(line.IngredientName),
-			Quantity:       quantity,
-			LineUnit:       lineUnit,
-			IngredientUnit: ingredientUnit,
-			PricePerUnit:   pricePerUnit,
-			EffectivePrice: round(effectivePrice),
-			WastePct:       wastePct,
-			RawCost:        round(rawCost),
-			AdjustedCost:   round(adjustedCost),
-		})
 	}
 
 	// fill percentages

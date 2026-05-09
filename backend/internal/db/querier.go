@@ -17,6 +17,7 @@ type Querier interface {
 	CreateLaborProfile(ctx context.Context, arg CreateLaborProfileParams) (LaborProfile, error)
 	CreateOverheadTemplate(ctx context.Context, arg CreateOverheadTemplateParams) (OverheadTemplate, error)
 	CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) (PriceHistory, error)
+	CreateProductionLog(ctx context.Context, arg CreateProductionLogParams) (ProductionLog, error)
 	CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error)
 	CreateRecipeLine(ctx context.Context, arg CreateRecipeLineParams) (RecipeLine, error)
 	CreateSupplier(ctx context.Context, arg CreateSupplierParams) (Supplier, error)
@@ -24,6 +25,7 @@ type Querier interface {
 	DeleteIngredient(ctx context.Context, id uuid.UUID) error
 	DeleteLaborProfile(ctx context.Context, id uuid.UUID) error
 	DeleteOverheadTemplate(ctx context.Context, id uuid.UUID) error
+	DeleteProductionLog(ctx context.Context, id uuid.UUID) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
 	DeleteRecipeLines(ctx context.Context, recipeID uuid.UUID) error
 	DeleteSupplier(ctx context.Context, id uuid.UUID) error
@@ -44,6 +46,8 @@ type Querier interface {
 	ListIngredients(ctx context.Context) ([]Ingredient, error)
 	ListLaborProfiles(ctx context.Context) ([]LaborProfile, error)
 	ListOverheadTemplates(ctx context.Context) ([]OverheadTemplate, error)
+	ListProductionLogs(ctx context.Context) ([]ListProductionLogsRow, error)
+	ListProductionLogsByRecipe(ctx context.Context, recipeID uuid.UUID) ([]ListProductionLogsByRecipeRow, error)
 	ListRecipes(ctx context.Context) ([]Recipe, error)
 	ListSubRecipes(ctx context.Context) ([]Recipe, error)
 	ListSuppliers(ctx context.Context) ([]Supplier, error)

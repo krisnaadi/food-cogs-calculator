@@ -28,6 +28,7 @@ func main() {
 	cogsHandler := handler.NewCOGSHandler(queries)
 	suppliersHandler := handler.NewSuppliersHandler(queries)
 	dashboardHandler := handler.NewDashboardHandler(queries)
+	productionHandler := handler.NewProductionHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -54,6 +55,7 @@ func main() {
 	r.Get("/dashboard/stats", dashboardHandler.Stats)
 	r.Get("/dashboard/top-ingredients", dashboardHandler.TopIngredients)
 	r.Get("/dashboard/recent-snapshots", dashboardHandler.RecentSnapshots)
+	r.Route("/production", productionHandler.Routes())
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("server listening on %s", addr)

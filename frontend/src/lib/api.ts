@@ -59,6 +59,12 @@ export const dashboardApi = {
     recentSnapshots: () => request<RecentSnapshot[]>('/dashboard/recent-snapshots'),
 }
 
+export const productionApi = {
+    list: () => request<ProductionLog[]>('/production'),
+    create: (data: ProductionLogPayload) => request<ProductionLog>('/production', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/production/${id}`, { method: 'DELETE' }),
+}
+
 // --- Types ---
 
 export interface Ingredient {
@@ -227,4 +233,27 @@ export interface RecentSnapshot {
     suggested_price: number
     margin_pct: number
     calculated_at: string
+}
+
+export interface ProductionLog {
+    id: string
+    recipe_id: string
+    recipe_name: string
+    batch_size: number
+    actual_ingredient_cost: number
+    actual_yield: number
+    expected_yield: number
+    yield_unit: string
+    yield_variance: number
+    cost_per_actual_unit: number
+    produced_at: string
+    notes: string | null
+}
+
+export interface ProductionLogPayload {
+    recipe_id: string
+    batch_size: number
+    actual_ingredient_cost: number
+    actual_yield: number
+    notes?: string
 }

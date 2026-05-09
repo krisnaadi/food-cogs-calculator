@@ -35,6 +35,7 @@ type cogsRequest struct {
 type lineBreakdownResponse struct {
 	IngredientID   string  `json:"ingredient_id"`
 	IngredientName string  `json:"ingredient_name"`
+	IsSubRecipe    bool    `json:"is_sub_recipe"`
 	Quantity       float64 `json:"quantity"`
 	LineUnit       string  `json:"line_unit"`
 	IngredientUnit string  `json:"ingredient_unit"`
@@ -124,6 +125,7 @@ func (h *COGSHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 		resp.BreakdownByLine = append(resp.BreakdownByLine, lineBreakdownResponse{
 			IngredientID:   l.IngredientID,
 			IngredientName: l.IngredientName,
+			IsSubRecipe:    l.IsSubRecipe,
 			Quantity:       l.Quantity,
 			LineUnit:       l.LineUnit,
 			IngredientUnit: l.IngredientUnit,
