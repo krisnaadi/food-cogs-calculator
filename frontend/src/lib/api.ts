@@ -57,6 +57,7 @@ export const dashboardApi = {
     stats: () => request<DashboardStats>('/dashboard/stats'),
     topIngredients: () => request<TopIngredient[]>('/dashboard/top-ingredients'),
     recentSnapshots: () => request<RecentSnapshot[]>('/dashboard/recent-snapshots'),
+    ingredientUsage: () => request<IngredientUsageRow[]>('/dashboard/ingredient-usage'),
 }
 
 export const productionApi = {
@@ -276,4 +277,15 @@ export interface LaborProfile {
 export interface LaborProfilePayload {
     role: string
     hourly_rate: number
+}
+
+export interface IngredientUsageRow {
+    id: string
+    name: string
+    unit: string
+    price_per_unit: number
+    waste_pct: number
+    recipe_count: number
+    used_in_recipes: string
+    total_quantity_used: number | null
 }

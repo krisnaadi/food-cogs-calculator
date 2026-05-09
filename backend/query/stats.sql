@@ -30,3 +30,22 @@ FROM cogs_snapshots cs
 JOIN recipes r ON r.id = cs.recipe_id
 ORDER BY cs.calculated_at DESC
 LIMIT 5;
+
+-- name: GetIngredientUsageReport :many
+SELECT
+  i.id,
+  i.name,
+  i.unit,
+  i.price_per_unit,
+  i.waste_pct,
+  COUNT(DISTINCT rl.recipe_id) AS recipe_count,
+  COALESCE(
+    STRING_AGG(DISTINCT r.name, ', ' ORDER BY r.name),
+    ''
+  ) AS used_in_recipes,
+  SUM(rl.quantity) AS total_quantity_used
+FROM ingredients i
+LEFT JOIN recipe_lines rl ON rl.ingredient_id = i.id
+LEFT JOIN recipes r ON r.id = rl.recipe_id
+GROUP BY i.id
+ORDER BY recipe_count DESC, i.price_per_unit DESC;

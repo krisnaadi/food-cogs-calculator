@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { historyApi, recipesApi } from '@/lib/api'
 import type { COGSHistoryRow } from '@/lib/api'
 import Modal from '@/components/Modal'
+import { exportCSV } from '@/lib/csv'
 
 const IDR = (n: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
@@ -95,6 +96,22 @@ export default function COGSHistoryPage() {
                             Clear
                         </button>
                     )}
+                    <button
+                        onClick={() => exportCSV(
+                            'cogs-history.csv',
+                            ['Recipe', 'Date', 'Cost/Unit', 'Suggested Price', 'Margin %', 'Ingredient Cost', 'Labor Cost', 'Overhead Cost', 'Total Batch', 'Notes'],
+                            filtered.map(h => [
+                                h.recipe_name, h.calculated_at,
+                                h.cost_per_unit, h.suggested_price,
+                                (h.margin_pct * 100).toFixed(0),
+                                h.ingredient_cost, h.labor_cost, h.overhead_cost,
+                                h.total_batch_cost, h.notes,
+                            ])
+                        )}
+                        className="text-xs text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 px-3 py-2 rounded transition-colors"
+                    >
+                        ↓ Export CSV
+                    </button>
                 </div>
             </div>
 

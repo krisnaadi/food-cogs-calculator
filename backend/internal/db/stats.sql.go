@@ -39,6 +39,66 @@ func (q *Queries) GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, 
 	return i, err
 }
 
+const getIngredientUsageReport = `-- name: GetIngredientUsageReport :many
+SELECT
+  i.id,
+  i.name,
+  i.unit,
+  i.price_per_unit,
+  i.waste_pct,
+  COUNT(DISTINCT rl.recipe_id) AS recipe_count,
+  COALESCE(
+    STRING_AGG(DISTINCT r.name, ', ' ORDER BY r.name),
+    ''
+  ) AS used_in_recipes,
+  SUM(rl.quantity) AS total_quantity_used
+FROM ingredients i
+LEFT JOIN recipe_lines rl ON rl.ingredient_id = i.id
+LEFT JOIN recipes r ON r.id = rl.recipe_id
+GROUP BY i.id
+ORDER BY recipe_count DESC, i.price_per_unit DESC
+`
+
+type GetIngredientUsageReportRow struct {
+	ID                uuid.UUID   `json:"id"`
+	Name              string      `json:"name"`
+	Unit              string      `json:"unit"`
+	PricePerUnit      float64     `json:"price_per_unit"`
+	WastePct          float64     `json:"waste_pct"`
+	RecipeCount       int64       `json:"recipe_count"`
+	UsedInRecipes     interface{} `json:"used_in_recipes"`
+	TotalQuantityUsed int64       `json:"total_quantity_used"`
+}
+
+func (q *Queries) GetIngredientUsageReport(ctx context.Context) ([]GetIngredientUsageReportRow, error) {
+	rows, err := q.db.Query(ctx, getIngredientUsageReport)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetIngredientUsageReportRow{}
+	for rows.Next() {
+		var i GetIngredientUsageReportRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Unit,
+			&i.PricePerUnit,
+			&i.WastePct,
+			&i.RecipeCount,
+			&i.UsedInRecipes,
+			&i.TotalQuantityUsed,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecentSnapshots = `-- name: GetRecentSnapshots :many
 SELECT
   cs.id,

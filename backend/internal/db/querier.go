@@ -31,6 +31,7 @@ type Querier interface {
 	DeleteSupplier(ctx context.Context, id uuid.UUID) error
 	GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, error)
 	GetIngredient(ctx context.Context, id uuid.UUID) (Ingredient, error)
+	GetIngredientUsageReport(ctx context.Context) ([]GetIngredientUsageReportRow, error)
 	GetLaborProfile(ctx context.Context, id uuid.UUID) (LaborProfile, error)
 	GetLatestPrice(ctx context.Context, ingredientID uuid.UUID) (float64, error)
 	GetOverheadTemplate(ctx context.Context, id uuid.UUID) (OverheadTemplate, error)

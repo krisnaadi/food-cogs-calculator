@@ -9,6 +9,9 @@ import ComparisonPage from '@/pages/ComparisonPage'
 import SimulatorPage from '@/pages/SimulatorPage'
 import ProductionPage from '@/pages/ProductionPage'
 import COGSHistoryPage from '@/pages/COGSHistoryPage'
+import LaborPage from '@/pages/LaborPage'
+import ProfitabilityPage from '@/pages/ProfitabilityPage'
+import UsageReportPage from '@/pages/UsageReportPage'
 
 export default function App() {
   return (
@@ -25,6 +28,9 @@ export default function App() {
           <Route path="simulator" element={<SimulatorPage />} />
           <Route path="production" element={<ProductionPage />} />
           <Route path="history" element={<COGSHistoryPage />} />
+          <Route path="labor" element={<LaborPage />} />
+          <Route path="profitability" element={<ProfitabilityPage />} />
+          <Route path="usage" element={<UsageReportPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

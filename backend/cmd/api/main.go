@@ -56,6 +56,7 @@ func main() {
 	r.Get("/dashboard/stats", dashboardHandler.Stats)
 	r.Get("/dashboard/top-ingredients", dashboardHandler.TopIngredients)
 	r.Get("/dashboard/recent-snapshots", dashboardHandler.RecentSnapshots)
+	r.Get("/dashboard/ingredient-usage", dashboardHandler.IngredientUsageReport)
 	r.Route("/production", productionHandler.Routes())
 	r.Route("/labor-profiles", laborHandler.Routes())
 

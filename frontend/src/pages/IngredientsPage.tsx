@@ -9,6 +9,7 @@ import { useIngredients, useCreateIngredient, useUpdateIngredient, useDeleteIngr
 import { useSuppliers } from '@/hooks/useSuppliers'
 import { ingredientsApi } from '@/lib/api'
 import type { Ingredient } from '@/lib/api'
+import { exportCSV } from '@/lib/csv'
 
 const schema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -222,11 +223,21 @@ export default function IngredientsPage() {
 
     return (
         <div className="max-w-5xl">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-stone-100">Ingredients</h1>
-                    <p className="text-sm text-stone-500 mt-1">Raw materials — price changes are auto-logged</p>
-                </div>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => exportCSV(
+                        'ingredients.csv',
+                        ['Name', 'SKU', 'Unit', 'Price/Unit (IDR)', 'Waste %', 'Supplier'],
+                        ingredients.map(i => [
+                            i.name, i.sku, i.unit, i.price_per_unit,
+                            (i.waste_pct * 100).toFixed(2),
+                            i.supplier_name,
+                        ])
+                    )}
+                    className="text-xs text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 px-3 py-2 rounded transition-colors"
+                >
+                    ↓ Export CSV
+                </button>
                 <button onClick={() => setShowCreate(true)}
                     className="bg-amber-400 text-stone-950 text-sm font-semibold px-4 py-2 rounded hover:bg-amber-300 transition-colors">
                     + Add Ingredient
