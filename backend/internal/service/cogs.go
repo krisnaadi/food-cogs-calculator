@@ -53,6 +53,7 @@ type COGSInput struct {
 	LaborCost    float64
 	OverheadCost float64
 	OverheadID   *uuid.UUID
+	Notes        *string
 }
 
 type LineBreakdown struct {
@@ -245,7 +246,7 @@ func (s *COGSService) Calculate(ctx context.Context, input COGSInput) (*COGSResu
 	}, nil
 }
 
-func (s *COGSService) SaveSnapshot(ctx context.Context, result *COGSResult, overheadID *uuid.UUID) error {
+func (s *COGSService) SaveSnapshot(ctx context.Context, result *COGSResult, overheadID *uuid.UUID, notes *string) error {
 	params := db.CreateCOGSSnapshotParams{
 		RecipeID:       result.RecipeID,
 		IngredientCost: result.IngredientCost,
@@ -258,6 +259,9 @@ func (s *COGSService) SaveSnapshot(ctx context.Context, result *COGSResult, over
 	}
 	if overheadID != nil {
 		params.OverheadID = pgtype.UUID{Bytes: *overheadID, Valid: true}
+	}
+	if notes != nil {
+		params.Notes = pgtype.Text{String: *notes, Valid: true}
 	}
 	_, err := s.queries.CreateCOGSSnapshot(ctx, params)
 	return err

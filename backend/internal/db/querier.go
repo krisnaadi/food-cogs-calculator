@@ -31,6 +31,7 @@ type Querier interface {
 	DeleteSupplier(ctx context.Context, id uuid.UUID) error
 	GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, error)
 	GetIngredient(ctx context.Context, id uuid.UUID) (Ingredient, error)
+	GetLaborProfile(ctx context.Context, id uuid.UUID) (LaborProfile, error)
 	GetLatestPrice(ctx context.Context, ingredientID uuid.UUID) (float64, error)
 	GetOverheadTemplate(ctx context.Context, id uuid.UUID) (OverheadTemplate, error)
 	GetPriceHistory(ctx context.Context, ingredientID uuid.UUID) ([]GetPriceHistoryRow, error)
@@ -52,6 +53,7 @@ type Querier interface {
 	ListSubRecipes(ctx context.Context) ([]Recipe, error)
 	ListSuppliers(ctx context.Context) ([]Supplier, error)
 	UpdateIngredient(ctx context.Context, arg UpdateIngredientParams) (Ingredient, error)
+	UpdateLaborProfile(ctx context.Context, arg UpdateLaborProfileParams) (LaborProfile, error)
 	UpdateOverheadTemplate(ctx context.Context, arg UpdateOverheadTemplateParams) (OverheadTemplate, error)
 	UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error)
 	UpdateSupplier(ctx context.Context, arg UpdateSupplierParams) (Supplier, error)

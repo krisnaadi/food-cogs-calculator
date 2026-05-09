@@ -1,0 +1,1 @@
+ALTER TABLE cogs_snapshots ADD COLUMN notes TEXT;

@@ -1,0 +1,1 @@
+ALTER TABLE cogs_snapshots DROP COLUMN IF EXISTS notes;

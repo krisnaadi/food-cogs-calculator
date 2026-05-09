@@ -21,6 +21,7 @@ type CogsSnapshot struct {
 	SuggestedPrice float64            `json:"suggested_price"`
 	MarginPct      float64            `json:"margin_pct"`
 	CalculatedAt   pgtype.Timestamptz `json:"calculated_at"`
+	Notes          pgtype.Text        `json:"notes"`
 }
 
 type Ingredient struct {

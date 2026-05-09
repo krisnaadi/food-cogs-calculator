@@ -126,6 +126,7 @@ const calcSchema = z.object({
     labor_cost: z.number().min(0),
     overhead_id: z.string().optional(),
     save_snapshot: z.boolean(),
+    notes: z.string().optional()
 })
 type CalcForm = z.infer<typeof calcSchema>
 
@@ -390,6 +391,7 @@ export default function COGSPage() {
             overhead_cost: overheadTotal,
             overhead_id: values.overhead_id || undefined,
             save_snapshot: values.save_snapshot,
+            notes: values.notes || undefined,
         })
     }
 
@@ -494,6 +496,10 @@ export default function COGSPage() {
                         />
                         <span className="text-xs text-stone-400">Save snapshot for history</span>
                     </label>
+
+                    <Field label="Notes (optional)" hint="e.g. new flour supplier">
+                        <input {...register('notes')} className={inputCls} placeholder="Any context for this calculation…" />
+                    </Field>
 
                     {calcMut.isError && (
                         <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">

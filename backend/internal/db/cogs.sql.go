@@ -16,9 +16,9 @@ const createCOGSSnapshot = `-- name: CreateCOGSSnapshot :one
 INSERT INTO cogs_snapshots (
   recipe_id, overhead_id,
   ingredient_cost, labor_cost, overhead_cost,
-  total_batch_cost, cost_per_unit, suggested_price, margin_pct
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, recipe_id, overhead_id, ingredient_cost, labor_cost, overhead_cost, total_batch_cost, cost_per_unit, suggested_price, margin_pct, calculated_at
+  total_batch_cost, cost_per_unit, suggested_price, margin_pct, notes
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, recipe_id, overhead_id, ingredient_cost, labor_cost, overhead_cost, total_batch_cost, cost_per_unit, suggested_price, margin_pct, calculated_at, notes
 `
 
 type CreateCOGSSnapshotParams struct {
@@ -31,6 +31,7 @@ type CreateCOGSSnapshotParams struct {
 	CostPerUnit    float64     `json:"cost_per_unit"`
 	SuggestedPrice float64     `json:"suggested_price"`
 	MarginPct      float64     `json:"margin_pct"`
+	Notes          pgtype.Text `json:"notes"`
 }
 
 func (q *Queries) CreateCOGSSnapshot(ctx context.Context, arg CreateCOGSSnapshotParams) (CogsSnapshot, error) {
@@ -44,6 +45,7 @@ func (q *Queries) CreateCOGSSnapshot(ctx context.Context, arg CreateCOGSSnapshot
 		arg.CostPerUnit,
 		arg.SuggestedPrice,
 		arg.MarginPct,
+		arg.Notes,
 	)
 	var i CogsSnapshot
 	err := row.Scan(
@@ -58,6 +60,7 @@ func (q *Queries) CreateCOGSSnapshot(ctx context.Context, arg CreateCOGSSnapshot
 		&i.SuggestedPrice,
 		&i.MarginPct,
 		&i.CalculatedAt,
+		&i.Notes,
 	)
 	return i, err
 }
@@ -82,8 +85,9 @@ SELECT
   cs.cost_per_unit,
   cs.suggested_price,
   cs.margin_pct,
+  cs.notes,
   cs.calculated_at,
-  r.name  AS recipe_name,
+  r.name       AS recipe_name,
   r.batch_yield,
   r.yield_unit
 FROM cogs_snapshots cs
@@ -102,6 +106,7 @@ type ListCOGSHistoryRow struct {
 	CostPerUnit    float64            `json:"cost_per_unit"`
 	SuggestedPrice float64            `json:"suggested_price"`
 	MarginPct      float64            `json:"margin_pct"`
+	Notes          pgtype.Text        `json:"notes"`
 	CalculatedAt   pgtype.Timestamptz `json:"calculated_at"`
 	RecipeName     string             `json:"recipe_name"`
 	BatchYield     int32              `json:"batch_yield"`
@@ -127,6 +132,7 @@ func (q *Queries) ListCOGSHistory(ctx context.Context) ([]ListCOGSHistoryRow, er
 			&i.CostPerUnit,
 			&i.SuggestedPrice,
 			&i.MarginPct,
+			&i.Notes,
 			&i.CalculatedAt,
 			&i.RecipeName,
 			&i.BatchYield,
@@ -153,8 +159,9 @@ SELECT
   cs.cost_per_unit,
   cs.suggested_price,
   cs.margin_pct,
+  cs.notes,
   cs.calculated_at,
-  r.name  AS recipe_name,
+  r.name       AS recipe_name,
   r.batch_yield,
   r.yield_unit
 FROM cogs_snapshots cs
@@ -173,6 +180,7 @@ type ListCOGSHistoryByRecipeRow struct {
 	CostPerUnit    float64            `json:"cost_per_unit"`
 	SuggestedPrice float64            `json:"suggested_price"`
 	MarginPct      float64            `json:"margin_pct"`
+	Notes          pgtype.Text        `json:"notes"`
 	CalculatedAt   pgtype.Timestamptz `json:"calculated_at"`
 	RecipeName     string             `json:"recipe_name"`
 	BatchYield     int32              `json:"batch_yield"`
@@ -198,6 +206,7 @@ func (q *Queries) ListCOGSHistoryByRecipe(ctx context.Context, recipeID uuid.UUI
 			&i.CostPerUnit,
 			&i.SuggestedPrice,
 			&i.MarginPct,
+			&i.Notes,
 			&i.CalculatedAt,
 			&i.RecipeName,
 			&i.BatchYield,

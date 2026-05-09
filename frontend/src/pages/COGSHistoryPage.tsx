@@ -260,6 +260,12 @@ export default function COGSHistoryPage() {
                                                                 <p className="text-stone-100 font-semibold tabular-nums">{IDR(row.total_batch_cost)}</p>
                                                                 <p className="text-stone-600">{row.batch_yield} {row.yield_unit} produced</p>
                                                             </div>
+                                                            {row.notes && (
+                                                                <div className="mt-3 pt-3 border-t border-stone-800">
+                                                                    <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">Notes</p>
+                                                                    <p className="text-xs text-stone-400">{row.notes}</p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

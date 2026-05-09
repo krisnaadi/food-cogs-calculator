@@ -38,6 +38,17 @@ func (q *Queries) DeleteLaborProfile(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getLaborProfile = `-- name: GetLaborProfile :one
+SELECT id, role, hourly_rate FROM labor_profiles WHERE id = $1
+`
+
+func (q *Queries) GetLaborProfile(ctx context.Context, id uuid.UUID) (LaborProfile, error) {
+	row := q.db.QueryRow(ctx, getLaborProfile, id)
+	var i LaborProfile
+	err := row.Scan(&i.ID, &i.Role, &i.HourlyRate)
+	return i, err
+}
+
 const listLaborProfiles = `-- name: ListLaborProfiles :many
 SELECT id, role, hourly_rate FROM labor_profiles ORDER BY role
 `
@@ -60,4 +71,24 @@ func (q *Queries) ListLaborProfiles(ctx context.Context) ([]LaborProfile, error)
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateLaborProfile = `-- name: UpdateLaborProfile :one
+UPDATE labor_profiles
+SET role = $2, hourly_rate = $3
+WHERE id = $1
+RETURNING id, role, hourly_rate
+`
+
+type UpdateLaborProfileParams struct {
+	ID         uuid.UUID `json:"id"`
+	Role       string    `json:"role"`
+	HourlyRate float64   `json:"hourly_rate"`
+}
+
+func (q *Queries) UpdateLaborProfile(ctx context.Context, arg UpdateLaborProfileParams) (LaborProfile, error) {
+	row := q.db.QueryRow(ctx, updateLaborProfile, arg.ID, arg.Role, arg.HourlyRate)
+	var i LaborProfile
+	err := row.Scan(&i.ID, &i.Role, &i.HourlyRate)
+	return i, err
 }

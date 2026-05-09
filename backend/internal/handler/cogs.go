@@ -30,6 +30,7 @@ type cogsRequest struct {
 	OverheadCost float64 `json:"overhead_cost"`
 	OverheadID   *string `json:"overhead_id"`
 	SaveSnapshot bool    `json:"save_snapshot"`
+	Notes        *string `json:"notes"`
 }
 
 type lineBreakdownResponse struct {
@@ -90,6 +91,7 @@ func (h *COGSHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 		TargetMargin: req.TargetMargin,
 		LaborCost:    req.LaborCost,
 		OverheadCost: req.OverheadCost,
+		Notes:        req.Notes,
 	}
 	if req.OverheadID != nil {
 		id, err := uuid.Parse(*req.OverheadID)
@@ -105,7 +107,7 @@ func (h *COGSHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.SaveSnapshot {
-		_ = h.cogsService.SaveSnapshot(r.Context(), result, input.OverheadID)
+		_ = h.cogsService.SaveSnapshot(r.Context(), result, input.OverheadID, input.Notes)
 	}
 
 	resp := cogsResponse{
@@ -194,12 +196,17 @@ func (h *COGSHandler) ListHistory(w http.ResponseWriter, r *http.Request) {
 		SuggestedPrice float64   `json:"suggested_price"`
 		MarginPct      float64   `json:"margin_pct"`
 		CalculatedAt   string    `json:"calculated_at"`
+		Notes          *string   `json:"notes"`
 	}
 	result := make([]historyRow, len(rows))
 	for i, row := range rows {
 		t := ""
 		if row.CalculatedAt.Valid {
 			t = row.CalculatedAt.Time.Format("2006-01-02 15:04:05")
+		}
+		var notes *string
+		if row.Notes.Valid {
+			notes = &row.Notes.String
 		}
 		result[i] = historyRow{
 			ID:             row.ID,
@@ -215,6 +222,7 @@ func (h *COGSHandler) ListHistory(w http.ResponseWriter, r *http.Request) {
 			SuggestedPrice: row.SuggestedPrice,
 			MarginPct:      row.MarginPct,
 			CalculatedAt:   t,
+			Notes:          notes,
 		}
 	}
 	writeJSON(w, http.StatusOK, result)

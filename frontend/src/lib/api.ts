@@ -148,6 +148,7 @@ export interface COGSPayload {
     overhead_cost: number
     overhead_id?: string
     save_snapshot: boolean
+    notes?: string
 }
 
 export interface COGSLineBreakdown {
@@ -202,6 +203,7 @@ export interface COGSHistoryRow {
     suggested_price: number
     margin_pct: number
     calculated_at: string
+    notes: string | null
 }
 
 export interface PriceHistoryEntry {
