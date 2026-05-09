@@ -65,6 +65,13 @@ export const productionApi = {
     delete: (id: string) => request<void>(`/production/${id}`, { method: 'DELETE' }),
 }
 
+export const laborApi = {
+    list: () => request<LaborProfile[]>('/labor-profiles'),
+    create: (data: LaborProfilePayload) => request<LaborProfile>('/labor-profiles', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: LaborProfilePayload) => request<LaborProfile>(`/labor-profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/labor-profiles/${id}`, { method: 'DELETE' }),
+}
+
 // --- Types ---
 
 export interface Ingredient {
@@ -258,4 +265,15 @@ export interface ProductionLogPayload {
     actual_ingredient_cost: number
     actual_yield: number
     notes?: string
+}
+
+export interface LaborProfile {
+    id: string
+    role: string
+    hourly_rate: number
+}
+
+export interface LaborProfilePayload {
+    role: string
+    hourly_rate: number
 }
